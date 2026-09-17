@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seva Sponsorship App — Admin Handover</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .app { max-width: 720px; }
+  main { padding: 20px 22px 60px; }
+  h2.section-title { margin-top: 32px; }
+  .doc-table { width: 100%; border-collapse: collapse; margin: 10px 0 18px; font-size: 13.5px; }
+  .doc-table th, .doc-table td { border: 1px solid var(--color-gold-light); padding: 8px 10px; text-align: left; vertical-align: top; }
+  .doc-table th { background: var(--color-primary); color: #fff; font-family: var(--font-label); }
+  .doc-table tr:nth-child(even) td { background: var(--color-bg-card-alt); }
+  code, .code-block { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12.5px; }
+  .code-block { display: block; background: var(--color-bg-card); border: 1px solid var(--color-gold-light); border-radius: 8px; padding: 10px 12px; margin: 8px 0 16px; white-space: pre-wrap; word-break: break-all; }
+  ol, ul { padding-left: 22px; font-size: 14.5px; line-height: 1.6; }
+  p { font-size: 14.5px; line-height: 1.6; }
+  .warn-box { border: 1.5px solid var(--color-danger); background: var(--color-danger-bg); color: var(--color-danger); border-radius: 8px; padding: 10px 14px; font-family: var(--font-label); font-size: 13.5px; margin: 10px 0 18px; }
+  .toc { background: var(--color-bg-card-alt); border: 1px solid var(--color-gold-light); border-radius: 10px; padding: 14px 18px; margin-top: 10px; }
+  .toc a { color: var(--color-primary); text-decoration: none; font-family: var(--font-label); }
+  .toc li { margin-bottom: 4px; }
+  @media print {
+    body { background: #fff; }
+    .app { max-width: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <header class="app-header">
+    <span class="om">ॐ</span>
+    <h1>Admin Handover</h1>
+    <p>Seva Sponsorship App</p>
+  </header>
+
+  <main>
+
+    <p>This document hands over the Seva Sponsorship data-entry system — what it is, how the pieces fit together, and how to run it day to day. Everything here is a plain static website; there is no server to maintain beyond the two Google Apps Script endpoints, which already existed before this app and are shared with other applications.</p>
+
+    <nav class="toc">
+      <ul>
+        <li><a href="#overview">1. Overview</a></li>
+        <li><a href="#files">2. Files in the repository</a></li>
+        <li><a href="#sheet">3. The Google Sheet</a></li>
+        <li><a href="#gap">4. How the entry window works (minGapDays)</a></li>
+        <li><a href="#admin-tasks">5. Day-to-day admin tasks</a></li>
+        <li><a href="#hoarding">6. Generating the hoarding PDF</a></li>
+        <li><a href="#whatsapp">7. WhatsApp confirmation</a></li>
+        <li><a href="#caveats">8. Known quirks &amp; caveats</a></li>
+        <li><a href="#contacts">9. Key values at a glance</a></li>
+      </ul>
+    </nav>
+
+    <h2 class="section-title" id="overview">1. Overview</h2>
+    <p>Sponsors fill in a mobile-friendly form (<code>index.html</code>) to book a Seva date, naming themselves, an optional co-sponsor, and up to two ancestors ("Pitru") being honoured. On submit, the entry is written to a shared Google Sheet, a WhatsApp confirmation opens automatically, and the app switches to a searchable list of all entries. A separate page (<code>report.html</code>) exports all entries as a print-ready PDF, sorted by Seva date, for handing to the hoarding printer — including correct rendering of Telugu names. A third page (<code>admin.html</code>) lets you change the year, dates, and entry-window settings without touching any code.</p>
+    <p>The whole thing is plain HTML/CSS/JS hosted on GitHub Pages — no build step, no server, no database beyond the Google Sheet. To make a change, you edit a file (or generate one via <code>admin.html</code>) and push it to the GitHub repository; the live site updates automatically.</p>
+
+    <h2 class="section-title" id="files">2. Files in the repository</h2>
+    <table class="doc-table">
+      <tr><th>File</th><th>Purpose</th></tr>
+      <tr><td><code>index.html</code> + <code>app.js</code></td><td>The main sponsor-facing app: New Entry form and View Entries (searchable, sorted by mobile number).</td></tr>
+      <tr><td><code>admin.html</code> + <code>admin.js</code></td><td>Admin-only utility to edit the year, seva dates, entry-window gap, WhatsApp number, and script/sheet settings, and download a fresh <code>parameters.js</code>. Not linked from the main app — open it directly.</td></tr>
+      <tr><td><code>report.html</code> + <code>report.js</code></td><td>Generates the hoarding PDF: all entries sorted by Seva date, columns Date / Sponsor / Pitru 1 / Pitru 2.</td></tr>
+      <tr><td><code>telugu-font.js</code></td><td>A Telugu font, embedded as text, used only by <code>report.html</code> so Telugu names render correctly in the PDF (see §8).</td></tr>
+      <tr><td><code>parameters.js</code></td><td>The single shared configuration file — year, dates, entry-window gap, WhatsApp number, script URLs, sheet ID/name, sheet column headers, relation dropdown list. Every page loads this file.</td></tr>
+      <tr><td><code>style.css</code></td><td>Shared visual styling for all pages.</td></tr>
+    </table>
+    <p>All files must sit in the same folder in the GitHub repository (typically the repo root, for GitHub Pages to serve them at the site's base URL).</p>
+
+    <h2 class="section-title" id="sheet">3. The Google Sheet</h2>
+    <p>All entries live in one Google Sheet, read and written through two separate Apps Script web apps that are <strong>already used by other applications</strong> — they should not be modified.</p>
+    <table class="doc-table">
+      <tr><th>Item</th><th>Value</th></tr>
+      <tr><td>Spreadsheet ID</td><td class="code-block" style="margin:0;">1wcfB0Qh421w0Qrd05IN5ftXYe-k5qKl280rhXg6mzZU</td></tr>
+      <tr><td>Sheet name</td><td>Data</td></tr>
+      <tr><td>Write endpoint</td><td class="code-block" style="margin:0;">https://script.google.com/macros/s/AKfycbytzFhmFLKbTpwiMhtvPUGyi26GTFg2i9cIPkbLQKrEfRd4Mb-ezKptfrf7nm-fSzUM/exec</td></tr>
+      <tr><td>Read endpoint</td><td class="code-block" style="margin:0;">https://script.google.com/macros/s/AKfycbwo-TtPn3DAjHSPCXDwPFerT36QyfPPvUTi7uQEvcmjJso_aWpaKefUsgx_vpJOowHUgg/exec</td></tr>
+    </table>
+    <p>The sheet's column headers, left to right, must be exactly:</p>
+    <span class="code-block">sevaYear · sevaDate · sponsorName · sponsorMobile · sponsorGotra · coSponsorName · coSponsorGotra · pitru1Name · pitru1Gotra · pitru1Relation · pitru2Name · pitru2Gotra · pitru2Relation</span>
+    <div class="warn-box">
+      <strong>Do not reorder or rename the sheet's columns</strong> without also updating <code>sheetHeaders</code> in <code>parameters.js</code> to match. The write script matches fields to columns by header <em>name</em>, but the app reads rows back purely by column <em>position</em> — if the sheet's column order and <code>sheetHeaders</code> ever disagree, entries will display under the wrong labels in View Entries and the PDF report.
+    </div>
+    <p>Duplicate entries (same sponsor mobile submitting more than once) are allowed by design.</p>
+
+    <h2 class="section-title" id="gap">4. How the entry window works (minGapDays)</h2>
+    <p>There are no fixed "slots" — just one number, <code>minGapDays</code>, in <code>parameters.js</code>. A Seva date can be picked only while there are at least that many days between today and that date, and it must fall within the overall Seva period (<code>sevaStartDate</code> to <code>sevaEndDate</code>).</p>
+    <ul>
+      <li>The earliest pickable date is always <em>today + minGapDays</em> (never earlier than <code>sevaStartDate</code>).</li>
+      <li>The latest pickable date is always <code>sevaEndDate</code>.</li>
+      <li>Entry closes automatically, with no action needed, once even the very last Seva date no longer has enough lead time.</li>
+      <li>Entry reopens automatically the moment you lower <code>minGapDays</code> and redeploy — there is no separate "reopen" switch.</li>
+    </ul>
+    <p><strong>Worked example</strong> — Seva period 01/10/2026–15/10/2026: with <code>minGapDays = 5</code>, entry closes automatically after 10/10/2026. If you then lower it to <code>minGapDays = 2</code> (say, on 12/10/2026, to let in latecomers), entry reopens immediately and stays open through 13/10/2026.</p>
+    <p>All of this is evaluated in <strong>India Standard Time</strong> regardless of where in the world the page is opened from — a sponsor entering from abroad sees the same open/closed status as one entering from India.</p>
+    <p>There is also a separate master switch, <code>dataEntryOpen</code> (true/false), that overrides everything above — set it to <code>false</code> to force the form closed no matter what the dates say.</p>
+
+    <h2 class="section-title" id="admin-tasks">5. Day-to-day admin tasks</h2>
+    <p><strong>To change the year, dates, WhatsApp number, minGapDays, or script/sheet settings:</strong></p>
+    <ol>
+      <li>Open <code>admin.html</code> in a browser (it prefills every field from the currently live <code>parameters.js</code>).</li>
+      <li>Edit whatever needs changing. The live preview under Minimum Gap Days shows the exact last day entry will stay open.</li>
+      <li>Click <strong>Generate parameters.js</strong>, review the code shown, then click <strong>Download parameters.js</strong>.</li>
+      <li>Replace the existing <code>parameters.js</code> in the GitHub repository with the downloaded file, and commit/push (or upload via the GitHub web UI).</li>
+      <li>The live site picks up the change as soon as GitHub Pages serves the new file — occasionally there is a short delay (a few minutes) due to caching; a hard-refresh on the live page clears it immediately.</li>
+    </ol>
+    <p><strong>To check current entries:</strong> open <code>index.html</code> → View Entries tab. Search by mobile number or sponsor name; tap any entry to see full details (gotras, co-sponsor, etc.).</p>
+
+    <h2 class="section-title" id="hoarding">6. Generating the hoarding PDF</h2>
+    <ol>
+      <li>Open <code>report.html</code>. It loads all entries, sorted by Seva date, and shows a preview table on screen.</li>
+      <li>Click <strong>Download PDF</strong>.</li>
+      <li>Hand the downloaded PDF to the printer. Telugu names are embedded as sharp images so they display correctly (see §8) — no special software is needed to open or print it, any PDF viewer works.</li>
+    </ol>
+
+    <h2 class="section-title" id="whatsapp">7. WhatsApp confirmation</h2>
+    <p>On a successful submission, the app automatically opens a WhatsApp chat (via a <code>wa.me</code> link) to the configured number with a prefilled confirmation message, then switches to the (freshly refreshed) View Entries tab so the new entry is visible immediately. This requires WhatsApp to be installed (on mobile) or WhatsApp Web to be logged in (on desktop).</p>
+    <div class="warn-box">
+      Some browsers occasionally block this automatic popup (most often on a slow connection). As a fallback, the confirmation report shown right after submitting also includes its own "Send via WhatsApp" button that can be tapped manually.
+    </div>
+
+    <h2 class="section-title" id="caveats">8. Known quirks &amp; caveats</h2>
+    <ul>
+      <li><strong>Google Sheets sometimes reformats dates.</strong> Occasionally Sheets auto-converts the incoming date text into a real date-type cell; when read back, it can arrive as a raw timestamp instead of plain text. The app detects this automatically and converts it back to <code>DD/MM/YYYY</code> — you should never see a raw timestamp on screen or in the PDF. If you ever do, it's worth a quick check that this logic still matches how the sheet is behaving.</li>
+      <li><strong>Telugu in the PDF is drawn as images, not text.</strong> The PDF library used (jsPDF) cannot correctly shape Telugu conjuncts and vowel signs on its own, so any Telugu name is rendered through the browser's own text engine onto a small canvas first, then dropped into the PDF as a crisp image. English and date cells remain normal, selectable PDF text. This means Telugu names in the PDF can't be copy-pasted as text, but they will display and print correctly.</li>
+      <li><strong>All dates are Indian format, DD/MM/YYYY</strong>, everywhere in the app, and all "is entry open right now" checks use India Standard Time regardless of the visitor's own timezone.</li>
+      <li>Mobile numbers are validated as 10 digits starting with 6, 7, 8, or 9.</li>
+    </ul>
+
+    <h2 class="section-title" id="contacts">9. Key values at a glance</h2>
+    <table class="doc-table">
+      <tr><th>Setting</th><th>Where to change it</th></tr>
+      <tr><td>Seva year, dates, minGapDays, WhatsApp number</td><td><code>admin.html</code> (regenerates <code>parameters.js</code>)</td></tr>
+      <tr><td>Relation dropdown list, sheet column headers</td><td>Edit <code>parameters.js</code> directly (these rarely change year to year)</td></tr>
+      <tr><td>Visual style / colors / fonts</td><td><code>style.css</code></td></tr>
+      <tr><td>Sheet ID, sheet name, script URLs</td><td><code>admin.html</code>, or directly in <code>parameters.js</code> — only if the underlying Sheet or Apps Script deployment itself changes</td></tr>
+    </table>
+
+  </main>
+
+</div>
+
+</body>
+</html>

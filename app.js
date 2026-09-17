@@ -53,18 +53,21 @@ function initStatusBanner() {
 function initTabs() {
   const tabButtons = document.querySelectorAll('.tab-btn');
   tabButtons.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      tabButtons.forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
-      const target = document.getElementById(btn.dataset.target);
-      target.classList.add('active');
-
-      if (btn.dataset.target === 'viewEntriesView' && !recordsLoaded) {
-        loadRecords();
-      }
-    });
+    btn.addEventListener('click', () => activateTab(btn.dataset.target));
   });
+}
+
+function activateTab(targetId) {
+  document.querySelectorAll('.tab-btn').forEach((b) => {
+    b.classList.toggle('active', b.dataset.target === targetId);
+  });
+  document.querySelectorAll('.view').forEach((v) => {
+    v.classList.toggle('active', v.id === targetId);
+  });
+
+  if (targetId === 'viewEntriesView' && !recordsLoaded) {
+    loadRecords();
+  }
 }
 
 // ---------------------------------------------------------------
@@ -132,18 +135,39 @@ function wireForm() {
         method: 'POST',
         body: formData
       });
-      const result = await response.json();
+      const rawText = await response.text();
+
+      let result;
+      try {
+        result = JSON.parse(rawText);
+      } catch (parseErr) {
+        // The Apps Script returned something that isn't JSON at all — usually
+        // an HTML error/sign-in page, which means the deployment itself needs
+        // attention (see the troubleshooting checklist), not the form data.
+        throw new Error(
+          'The write script did not return a valid response. It may not be deployed for "Anyone" access, the URL may be out of date, or the script may have an error. Please check the Apps Script deployment.'
+        );
+      }
 
       if (result.result !== 'success') {
         throw new Error(result.error || 'Submission failed.');
       }
 
       showReport(record);
+
+      // Best-effort auto-open of WhatsApp with the confirmation prefilled.
+      // Some browsers may block this popup (especially on slow connections,
+      // since it happens after an awaited network call) — the "Send via
+      // WhatsApp" button in the report above is kept as a manual fallback.
+      window.open(buildWhatsAppLink(record), '_blank', 'noopener');
+
       form.reset();
       document.getElementById('sevaYearHidden').value = PARAMETERS.sevaYear;
       document.getElementById('pitru1OtherWrap').style.display = 'none';
       document.getElementById('pitru2OtherWrap').style.display = 'none';
-      recordsLoaded = false; // force a refresh next time View Entries is opened
+
+      recordsLoaded = false; // force a fresh fetch since a new row was just added
+      activateTab('viewEntriesView'); // jump straight to the (refreshed) entry list
     } catch (err) {
       errorEl.textContent = err.message || 'Could not submit — please check your connection and try again.';
     } finally {
