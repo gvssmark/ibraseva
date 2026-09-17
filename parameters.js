@@ -28,7 +28,7 @@ const PARAMETERS = {
   minGapDays: 5,
 
   // WhatsApp number for notifications (country code + number, no '+', no spaces)
-  whatsappNumber: "919989036183",
+  whatsappNumber: "919493336472",
 
   // Google Apps Script Web App URL — handles WRITING new entries to the sheet
   scriptURL: "https://script.google.com/macros/s/AKfycbytzFhmFLKbTpwiMhtvPUGyi26GTFg2i9cIPkbLQKrEfRd4Mb-ezKptfrf7nm-fSzUM/exec",
