@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seva Sponsorship Entries</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <header class="app-header">
+    <span class="om">ॐ</span>
+    <h1>Seva Sponsorship</h1>
+    <p>Seva Year <span id="sevaYearDisplay"></span></p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-target="newEntryView">New Entry</button>
+    <button class="tab-btn" data-target="viewEntriesView">View Entries</button>
+  </nav>
+
+  <div id="statusBanner" class="status-banner"></div>
+
+  <main>
+
+    <!-- ============ NEW ENTRY VIEW ============ -->
+    <section id="newEntryView" class="view active">
+
+      <form id="sevaForm" novalidate>
+        <input type="hidden" id="sevaYearHidden">
+
+        <div class="field">
+          <label for="sevaDate">Seva Date <span class="req">*</span></label>
+          <input type="date" id="sevaDate" required>
+        </div>
+
+        <fieldset class="field-group">
+          <legend>Sponsor</legend>
+          <div class="field">
+            <label for="sponsorName">Sponsor Name <span class="req">*</span></label>
+            <input type="text" id="sponsorName" required>
+          </div>
+          <div class="field">
+            <label for="sponsorMobile">Sponsor Mobile <span class="req">*</span></label>
+            <input type="tel" id="sponsorMobile" inputmode="numeric" maxlength="10" placeholder="10-digit mobile number" required>
+          </div>
+          <div class="field">
+            <label for="sponsorGotra">Sponsor Gotra</label>
+            <input type="text" id="sponsorGotra">
+          </div>
+        </fieldset>
+
+        <fieldset class="field-group">
+          <legend>Co-Sponsor (optional)</legend>
+          <div class="field">
+            <label for="coSponsorName">Co-Sponsor Name</label>
+            <input type="text" id="coSponsorName">
+          </div>
+          <div class="field">
+            <label for="coSponsorGotra">Co-Sponsor Gotra</label>
+            <input type="text" id="coSponsorGotra">
+          </div>
+        </fieldset>
+
+        <fieldset class="field-group">
+          <legend>Pitru 1</legend>
+          <div class="field">
+            <label for="pitru1Name">Name <span class="req">*</span></label>
+            <input type="text" id="pitru1Name" required>
+          </div>
+          <div class="field">
+            <label for="pitru1Gotra">Gotra</label>
+            <input type="text" id="pitru1Gotra">
+          </div>
+          <div class="field">
+            <label for="pitru1Relation">Relation <span class="req">*</span></label>
+            <select id="pitru1Relation" required></select>
+          </div>
+          <div class="field" id="pitru1OtherWrap" style="display:none;">
+            <label for="pitru1RelationOther">Specify Relation</label>
+            <input type="text" id="pitru1RelationOther">
+          </div>
+        </fieldset>
+
+        <fieldset class="field-group">
+          <legend>Pitru 2 (optional)</legend>
+          <div class="field">
+            <label for="pitru2Name">Name</label>
+            <input type="text" id="pitru2Name">
+          </div>
+          <div class="field">
+            <label for="pitru2Gotra">Gotra</label>
+            <input type="text" id="pitru2Gotra">
+          </div>
+          <div class="field">
+            <label for="pitru2Relation">Relation</label>
+            <select id="pitru2Relation"></select>
+          </div>
+          <div class="field" id="pitru2OtherWrap" style="display:none;">
+            <label for="pitru2RelationOther">Specify Relation</label>
+            <input type="text" id="pitru2RelationOther">
+          </div>
+        </fieldset>
+
+        <div id="formError" class="error-text"></div>
+
+        <button type="submit" id="submitBtn" class="btn-primary">Submit Seva Details</button>
+      </form>
+
+      <div id="reportContainer"></div>
+
+    </section>
+
+    <!-- ============ VIEW ENTRIES ============ -->
+    <section id="viewEntriesView" class="view">
+      <div class="search-box">
+        <span class="icon">&#128269;</span>
+        <input type="text" id="searchInput" placeholder="Search by mobile or sponsor name">
+      </div>
+      <div id="recordsList"></div>
+    </section>
+
+  </main>
+
+</div>
+
+<script src="parameters.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
