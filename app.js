@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
   populateRelationSelect('pitru1Relation');
   populateRelationSelect('pitru2Relation');
   wireOtherRelationFields();
+  wireDateFieldValidation();
   wireForm();
   wireSearch();
 });
@@ -33,11 +34,24 @@ function initStatusBanner() {
 
   if (range) {
     banner.className = 'status-banner open';
-    banner.textContent =
-      `Data entry is open. You may pick a Seva date from ${isoToDDMMYYYY(range.minISO)} to ${PARAMETERS.sevaEndDate}.`;
     dateInput.min = range.minISO;
     dateInput.max = range.maxISO;
-    dateInput.disabled = false;
+
+    if (range.minISO === range.maxISO) {
+      // Only one valid date. Some mobile date pickers (observed on Android)
+      // don't reliably enforce "max" when min and max are the same day,
+      // letting an out-of-range date be picked through the native widget.
+      // Sidestep that entirely: lock the field to the single valid date
+      // instead of trusting the picker to enforce it.
+      dateInput.value = range.minISO;
+      dateInput.disabled = true;
+      banner.textContent = `Data entry is open for the only available Seva date: ${PARAMETERS.sevaEndDate}.`;
+    } else {
+      dateInput.disabled = false;
+      banner.textContent =
+        `Data entry is open. You may pick a Seva date from ${isoToDDMMYYYY(range.minISO)} to ${PARAMETERS.sevaEndDate}.`;
+    }
+
     submitBtn.disabled = false;
   } else {
     banner.className = 'status-banner closed';
@@ -95,6 +109,30 @@ function wireOtherRelationFields() {
     select.addEventListener('change', () => {
       otherWrap.style.display = select.value === 'Anyother Specify' ? 'block' : 'none';
     });
+  });
+}
+
+// Gives immediate feedback the moment a date is picked, rather than only at
+// submit — a backstop for native date pickers (observed on Android) that
+// don't always enforce min/max correctly. If an out-of-range date somehow
+// gets through the widget, it's cleared right away with an explanation.
+function wireDateFieldValidation() {
+  const dateInput = document.getElementById('sevaDate');
+  const errorEl = document.getElementById('formError');
+
+  dateInput.addEventListener('change', () => {
+    if (!dateInput.value) return;
+    const range = getAllowedDateRange();
+    if (!range) return; // initStatusBanner already disables the field when closed
+
+    const pickedDDMMYYYY = isoToDDMMYYYY(dateInput.value);
+    if (!isDateWithinAllowedRange(pickedDDMMYYYY, range)) {
+      errorEl.textContent =
+        `${pickedDDMMYYYY} is outside the allowed range (${isoToDDMMYYYY(range.minISO)} to ${isoToDDMMYYYY(range.maxISO)}). Please pick again.`;
+      dateInput.value = '';
+    } else {
+      errorEl.textContent = '';
+    }
   });
 }
 
