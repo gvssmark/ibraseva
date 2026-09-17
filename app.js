@@ -115,7 +115,7 @@ function wireForm() {
     }
 
     const record = buildRecordFromForm();
-    const validationError = validateRecord(record);
+    const validationError = validateRecord(record, range);
     if (validationError) {
       errorEl.textContent = validationError;
       return;
@@ -205,8 +205,11 @@ function buildRecordFromForm() {
   };
 }
 
-function validateRecord(record) {
+function validateRecord(record, range) {
   if (!record.sevaDate) return 'Please pick a Seva date.';
+  if (!isDateWithinAllowedRange(record.sevaDate, range)) {
+    return `Please pick a Seva date between ${isoToDDMMYYYY(range.minISO)} and ${isoToDDMMYYYY(range.maxISO)}.`;
+  }
   if (!record.sponsorName) return 'Sponsor name is required.';
   if (!PARAMETERS.mobileNumberRegex.test(record.sponsorMobile)) {
     return 'Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9.';
@@ -214,6 +217,27 @@ function validateRecord(record) {
   if (!record.pitru1Name) return 'Pitru 1 name is required.';
   if (!record.pitru1Relation) return 'Pitru 1 relation is required.';
   return null;
+}
+
+// Re-checks the picked date against the actual allowed range, independent of
+// whatever the native <input type="date"> widget did or didn't enforce —
+// some mobile date pickers (observed on Android, especially when min and max
+// are the same single day) let a date outside the range through regardless
+// of the min/max attributes, so this is a required backstop, not a formality.
+// Deliberately avoids `new Date("YYYY-MM-DD")`, which JS parses as UTC
+// midnight (not local midnight) and can silently shift by a day depending on
+// the device's timezone — everything here is built from plain y/m/d numbers,
+// compared as local dates, matching how the rest of the app handles dates.
+function isDateWithinAllowedRange(ddmmyyyyStr, range) {
+  const [d, m, y] = ddmmyyyyStr.split('/').map(Number);
+  const picked = new Date(y, m - 1, d);
+
+  const [minY, minM, minD] = range.minISO.split('-').map(Number);
+  const [maxY, maxM, maxD] = range.maxISO.split('-').map(Number);
+  const min = new Date(minY, minM - 1, minD);
+  const max = new Date(maxY, maxM - 1, maxD);
+
+  return picked >= min && picked <= max;
 }
 
 function isoToDDMMYYYY(iso) {
